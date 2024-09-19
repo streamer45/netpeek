@@ -14,6 +14,7 @@
 
 - [Golang](https://go.dev/doc/install) >= v1.22
 - A C compiler (e.g. GCC)
+- [libpcap](https://www.tcpdump.org/)
 
 ### Usage
 

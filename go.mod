@@ -1,4 +1,4 @@
-module netpeek
+module github.com/streamer45/netpeek
 
 go 1.22.6
 

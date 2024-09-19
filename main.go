@@ -6,9 +6,10 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/google/gopacket"
-	"github.com/google/gopacket/layers"
-	"github.com/google/gopacket/pcap"
+	pcap "github.com/packetcap/go-pcap"
+
+	"github.com/gopacket/gopacket"
+	"github.com/gopacket/gopacket/layers"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -95,19 +96,19 @@ func main() {
 	var httpAddress string
 
 	flag.IntVar(&port, "port", 8065, "port number to capture packets on")
-	flag.StringVar(&iface, "iface", "eth0", "network interface to capture packets on")
+	flag.StringVar(&iface, "iface", "lo", "network interface to capture packets on")
 	flag.StringVar(&httpAddress, "address", ":9045", "listening address for the HTTP server exposing metrics")
 	flag.Parse()
 
 	// Open PCAP handle to capture packets on the network device.
-	handle, err := pcap.OpenLive(iface, 1600, true, pcap.BlockForever)
+	handle, err := pcap.OpenLive(iface, 1600, true, 0, false)
 	if err != nil {
 		log.Fatalf("failed to start capture: %s", err.Error())
 	}
 
 	// Generate and set the BPF filter.
-	// We only care about TCP/UDP through a given port for now.
-	filter := fmt.Sprintf("(tcp or udp) and port %d", port)
+	// We only care about packets over a single port for now.
+	filter := fmt.Sprintf("port %d", port)
 	if err := handle.SetBPFFilter(filter); err != nil {
 		log.Fatalf("failed to set filter: %s", err.Error())
 	}
@@ -123,7 +124,8 @@ func main() {
 	}()
 
 	// Setup packet decoder and process all the packets that pass the filter.
-	source := gopacket.NewPacketSource(handle, handle.LinkType())
+	source := gopacket.NewPacketSource(handle, layers.LinkTypeEthernet)
+	source.NoCopy = true
 	for pkt := range source.Packets() {
 		handlePacket(metrics, port, pkt)
 	}

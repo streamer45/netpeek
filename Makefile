@@ -1,9 +1,9 @@
 dist/netpeek:
 	mkdir -p dist/
-	go build -o dist/netpeek ./...
+	CGO_ENABLED=0 go build -o dist/netpeek ./...
 
 clean:
-	rm -f netpeek
+	rm -rf dist
 
 .PHONY: lint
 lint: 

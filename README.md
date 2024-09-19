@@ -13,14 +13,12 @@
 ### Requirements
 
 - [Golang](https://go.dev/doc/install) >= v1.22
-- A C compiler (e.g. GCC)
-- [libpcap](https://www.tcpdump.org/)
 
 ### Usage
 
 ```sh
 make
-sudo ./dist/netpeek -i eth0 -p 80
+sudo ./dist/netpeek -i lo -p 80
 curl http://localhost:9045/metrics
 ```
 

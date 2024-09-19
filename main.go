@@ -12,6 +12,7 @@ import (
 	"github.com/gopacket/gopacket/layers"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -29,6 +30,10 @@ type metrics struct {
 func initMetrics() *metrics {
 	var m metrics
 	m.registry = prometheus.NewRegistry()
+
+	m.registry.MustRegister(collectors.NewProcessCollector(collectors.ProcessCollectorOpts{
+		Namespace: metricsNamespace,
+	}))
 
 	m.rxCounter = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Namespace: metricsNamespace,

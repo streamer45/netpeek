@@ -42,22 +42,21 @@ func initMetrics() *metrics {
 		Namespace: metricsNamespace,
 		Name:      "rx_bytes_total",
 		Help:      "The total number of received bytes.",
-	}, []string{"protocol", "src_addr", "src_port"})
+	}, []string{"protocol", "src_addr"})
 	m.registry.MustRegister(m.rxCounter)
 
 	m.txCounter = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Namespace: metricsNamespace,
 		Name:      "tx_bytes_total",
 		Help:      "The total number of transmitted bytes.",
-	}, []string{"protocol", "dst_addr", "dst_port"})
+	}, []string{"protocol", "dst_addr"})
 	m.registry.MustRegister(m.txCounter)
 
 	return &m
 }
 
-func handlePacket(m *metrics, srcAddrs []string, targetPort int, pkt gopacket.Packet) {
+func handlePacket(m *metrics, srcAddrs []string, pkt gopacket.Packet) {
 	var srcAddr, dstAddr string
-	var srcPort, dstPort int
 	var protocol string
 
 	// Get source and destination addressed from the network layer.
@@ -72,30 +71,24 @@ func handlePacket(m *metrics, srcAddrs []string, targetPort int, pkt gopacket.Pa
 	// Check whether the packet is TCP or UDP.
 	if tcpLayer := pkt.Layer(layers.LayerTypeTCP); tcpLayer != nil {
 		protocol = "tcp"
-		tcp, _ := tcpLayer.(*layers.TCP)
-		srcPort, dstPort = int(tcp.SrcPort), int(tcp.DstPort)
 	} else if udpLayer := pkt.Layer(layers.LayerTypeUDP); udpLayer != nil {
 		protocol = "udp"
-		udp, _ := udpLayer.(*layers.UDP)
-		srcPort, dstPort = int(udp.SrcPort), int(udp.DstPort)
 	}
 
 	// We want to track size of the whole payload, including the below layers.
 	pktLen := len(pkt.Data())
 
-	if srcPort == targetPort && slices.Contains(srcAddrs, dstAddr) {
+	if slices.Contains(srcAddrs, dstAddr) {
 		// incoming packet
 		m.rxCounter.With(prometheus.Labels{
 			"protocol": protocol,
 			"src_addr": srcAddr,
-			"src_port": fmt.Sprintf("%d", srcPort),
 		}).Add(float64(pktLen))
-	} else if dstPort == targetPort && slices.Contains(srcAddrs, srcAddr) {
+	} else if slices.Contains(srcAddrs, srcAddr) {
 		// outgoing packet
 		m.txCounter.With(prometheus.Labels{
 			"protocol": protocol,
 			"dst_addr": dstAddr,
-			"dst_port": fmt.Sprintf("%d", dstPort),
 		}).Add(float64(pktLen))
 	}
 }
@@ -158,6 +151,6 @@ func main() {
 	source := gopacket.NewPacketSource(handle, layers.LinkTypeEthernet)
 	source.NoCopy = true
 	for pkt := range source.Packets() {
-		handlePacket(metrics, ips, port, pkt)
+		handlePacket(metrics, ips, pkt)
 	}
 }

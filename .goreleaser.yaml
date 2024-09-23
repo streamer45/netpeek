@@ -1,0 +1,29 @@
+version: 2
+
+before:
+  hooks:
+    - go mod tidy
+    - go mod verify
+
+builds:
+  - env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - amd64
+    flags:
+      - -mod=readonly
+      - -trimpath
+
+changelog:
+  sort: desc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+
+archives:
+  -
+    format: binary
+    name_template: "{{ .ProjectName }}-v{{ .Version }}"
